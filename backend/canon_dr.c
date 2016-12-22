@@ -1690,6 +1690,33 @@ init_model (struct scanner *s)
     s->can_halftone = 0;
   }
 
+  else if (strstr (s->model_name,"DR-X10C")){
+
+    /* Required for USB coms */
+    s->has_ssm = 0;
+    s->has_ssm2 = 1;
+
+    /* missing */
+    s->std_res_x[DPI_100]=1;
+    s->std_res_y[DPI_100]=1;
+    s->std_res_x[DPI_150]=1;
+    s->std_res_y[DPI_150]=1;
+    s->std_res_x[DPI_200]=1;
+    s->std_res_y[DPI_200]=1;
+    s->std_res_x[DPI_240]=1;
+    s->std_res_y[DPI_240]=1;
+    s->std_res_x[DPI_300]=1;
+    s->std_res_y[DPI_300]=1;
+    s->std_res_x[DPI_400]=1;
+    s->std_res_y[DPI_400]=1;
+    s->std_res_x[DPI_600]=1;
+    s->std_res_y[DPI_600]=1;
+
+    s->reverse_by_mode[MODE_LINEART] = 0;
+    s->reverse_by_mode[MODE_HALFTONE] = 0;
+
+  }
+
   DBG (10, "init_model: finish\n");
 
   return SANE_STATUS_GOOD;
