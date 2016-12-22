@@ -3626,6 +3626,46 @@ ssm_do (struct scanner *s)
         out, outLen,
         NULL, NULL
     );
+
+    if(ret == SANE_STATUS_GOOD &&
+       (s->s.source == SOURCE_ADF_DUPLEX || s->s.source == SOURCE_CARD_DUPLEX)){
+
+      memset(cmd,0,cmdLen);
+      set_SCSI_opcode(cmd, SET_SCAN_MODE2_code);
+      set_SSM2_page_code(cmd, SM2_pc_dropout);
+      set_SSM2_DO_side(cmd, SIDE_BACK);
+      set_SSM2_pay_len(cmd, outLen);
+
+      memset(out,0,outLen);
+
+      switch(s->dropout_color[SIDE_BACK]){
+        case COLOR_RED:
+          set_SSM2_DO_do(out,SSM_DO_red);
+          break;
+        case COLOR_GREEN:
+          set_SSM2_DO_do(out,SSM_DO_green);
+          break;
+        case COLOR_BLUE:
+          set_SSM2_DO_do(out,SSM_DO_blue);
+          break;
+        case COLOR_EN_RED:
+          set_SSM2_DO_en(out,SSM_DO_red);
+          break;
+        case COLOR_EN_GREEN:
+          set_SSM2_DO_en(out,SSM_DO_green);
+          break;
+        case COLOR_EN_BLUE:
+          set_SSM2_DO_en(out,SSM_DO_blue);
+          break;
+      }
+
+      ret = do_cmd (
+          s, 1, 0,
+          cmd, cmdLen,
+          out, outLen,
+          NULL, NULL
+      );
+    }
   }
 
   else{

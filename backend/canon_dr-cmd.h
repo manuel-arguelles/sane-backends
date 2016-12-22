@@ -460,6 +460,7 @@ putnbyte (unsigned char *pnt, unsigned int value, unsigned int nbytes)
 /* for DROPOUT (0x06) page */
 #define set_SSM2_DO_do(sb, val)              sb[0x09] = val
 #define set_SSM2_DO_en(sb, val)              sb[0x0a] = val
+#define set_SSM2_DO_side(sb, val)            sb[0x05] = val
 
 /* ==================================================================== */
 /* window descriptor macros for SET_WINDOW and GET_WINDOW */
