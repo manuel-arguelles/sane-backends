@@ -3483,6 +3483,49 @@ ssm_df (struct scanner *s)
 }
 
 static SANE_Status
+ssm2_hw_enhancement (struct scanner *s)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+
+  DBG (10, "ssm2_hw_enhancement: start\n");
+
+  if(s->has_ssm2){
+    unsigned char cmd[SET_SCAN_MODE2_len];
+    size_t cmdLen = SET_SCAN_MODE2_len;
+
+    unsigned char out[SSM2_PAY_len];
+    size_t outLen = SSM2_PAY_len;
+
+    memset(cmd,0,cmdLen);
+    set_SCSI_opcode(cmd, SET_SCAN_MODE2_code);
+    set_SSM2_page_code(cmd, SM2_pc_hw_enhancement);
+    set_SSM2_pay_len(cmd, outLen);
+
+    memset(out,0,outLen);
+
+    if(s->rollerdeskew){
+      set_SSM2_roller_deskew(out, 1);
+    }
+
+    ret = do_cmd (
+        s, 1, 0,
+        cmd, cmdLen,
+        out, outLen,
+        NULL, NULL
+    );
+
+  }
+
+  else{
+    DBG (10, "ssm2_hw_enhancement: unsupported\n");
+  }
+
+  DBG (10, "ssm2_hw_enhancement: finish\n");
+
+  return ret;
+}
+
+static SANE_Status
 ssm_do (struct scanner *s)
 {
   SANE_Status ret = SANE_STATUS_GOOD;
@@ -4204,6 +4247,12 @@ sane_start (SANE_Handle handle)
     ret = ssm_df(s);
     if (ret != SANE_STATUS_GOOD) {
       DBG (5, "sane_start: ERROR: cannot ssm df\n");
+      goto errors;
+    }
+
+    ret = ssm2_hw_enhancement(s);
+    if (ret != SANE_STATUS_GOOD) {
+      DBG (5, "sane_start: ERROR: cannot ssm2 hw enhancement\n");
       goto errors;
     }
 

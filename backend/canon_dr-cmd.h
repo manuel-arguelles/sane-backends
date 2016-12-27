@@ -431,6 +431,7 @@ putnbyte (unsigned char *pnt, unsigned int value, unsigned int nbytes)
 #define SM2_pc_df                       0x00
 #define SM2_pc_ultra                    0x01
 #define SM2_pc_buffer                   0x02
+#define SM2_pc_hw_enhancement           0x03
 #define SM2_pc_dropout                  0x06
 
 /* ==================================================================== */
@@ -456,6 +457,9 @@ putnbyte (unsigned char *pnt, unsigned int value, unsigned int nbytes)
 #define set_SSM2_BUFF_unk(sb, val)           sb[0x03] = val
 #define set_SSM2_BUFF_unk2(sb, val)          sb[0x06] = val
 #define set_SSM2_BUFF_sync(sb, val)          sb[0x09] = val
+
+/* for HARDWARE ENHANCEMENT (0x03) */
+#define set_SSM2_roller_deskew(sb, val)      setbitfield(sb+6, 1, 3, val)
 
 /* for DROPOUT (0x06) page */
 #define set_SSM2_DO_do(sb, val)              sb[0x09] = val
