@@ -448,6 +448,7 @@ putnbyte (unsigned char *pnt, unsigned int value, unsigned int nbytes)
 /* for DF (0x00) page */
 #define set_SSM2_DF_thick(sb, val)       setbitfield(sb+3, 1, 2, val)
 #define set_SSM2_DF_len(sb, val)         setbitfield(sb+3, 1, 0, val)
+#define set_SSM2_DF_staple(sb, val)      setbitfield(sb+3, 1, 4, val)
 
 /* for ULTRA (0x01) page */
 #define set_SSM2_ULTRA_top(sb, val)      putnbyte(sb + 0x07, val, 2)

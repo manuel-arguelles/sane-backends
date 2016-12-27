@@ -3463,7 +3463,12 @@ ssm_df (struct scanner *s)
     if(s->df_length){
       set_SSM2_DF_len(out, 1);
     }
-  
+
+    /* staple detection */
+    if(s->stapledetect){
+      set_SSM2_DF_staple(out, 1);
+    }
+
     ret = do_cmd (
         s, 1, 0,
         cmd, cmdLen,
