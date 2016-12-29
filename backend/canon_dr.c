@@ -1715,6 +1715,7 @@ init_model (struct scanner *s)
     s->reverse_by_mode[MODE_LINEART] = 0;
     s->reverse_by_mode[MODE_HALFTONE] = 0;
 
+    s->has_pixelsize = 1;
   }
 
   DBG (10, "init_model: finish\n");
@@ -2578,6 +2579,18 @@ sane_get_option_descriptor (SANE_Handle handle, SANE_Int option)
     opt->constraint_type = SANE_CONSTRAINT_NONE;
   }
 
+  /*hardware crop*/
+  if(option==OPT_HW_CROP){
+    opt->name = "hwcrop";
+    opt->title = "Hardware crop";
+    opt->desc = "Request scanner to crop image automatically";
+    opt->type = SANE_TYPE_BOOL;
+    if (s->has_pixelsize)
+     opt->cap = SANE_CAP_SOFT_SELECT | SANE_CAP_SOFT_DETECT | SANE_CAP_ADVANCED;
+    else
+     opt->cap = SANE_CAP_INACTIVE;
+  }
+
   /* "Sensor" group ------------------------------------------------------ */
   if(option==OPT_SENSOR_GROUP){
     opt->name = SANE_NAME_SENSORS;
@@ -2990,6 +3003,10 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           ret = read_sensors(s,OPT_CARD_LOADED);
           *val_p = s->sensor_card_loaded;
           return ret;
+
+        case OPT_HW_CROP:
+          *val_p = s->hwcrop;
+          return SANE_STATUS_GOOD;
       }
   }
   else if (action == SANE_ACTION_SET_VALUE) {
@@ -3264,6 +3281,10 @@ sane_control_option (SANE_Handle handle, SANE_Int option,
           s->buffermode = val_c;
           return SANE_STATUS_GOOD;
 
+        case OPT_HW_CROP:
+          s->hwcrop = val_c;
+          return SANE_STATUS_GOOD;
+
       }
   }                           /* else */
 
@@ -3510,6 +3531,10 @@ ssm2_hw_enhancement (struct scanner *s)
 
     if(s->rollerdeskew){
       set_SSM2_roller_deskew(out, 1);
+    }
+
+    if(s->hwcrop){
+      set_SSM2_hw_crop(out, 1);
     }
 
     ret = do_cmd (
@@ -3882,6 +3907,75 @@ send_panel(struct scanner *s)
     DBG (10, "send_panel: finish %d\n", ret);
   
     return ret;
+}
+
+/*
+ * Request the size of the scanned image
+ */
+static SANE_Status
+get_pixelsize(struct scanner *s)
+{
+  SANE_Status ret = SANE_STATUS_GOOD;
+
+  unsigned char cmd[READ_len];
+  size_t cmdLen = READ_len;
+
+  unsigned char in[R_PSIZE_len];
+  size_t inLen = R_PSIZE_len;
+
+  int i = 0;
+  const int MAX_TRIES = 5;
+
+  DBG (10, "get_pixelsize: start\n");
+
+  if(!s->has_pixelsize || !s->hwcrop){
+    DBG (10, "get_pixelsize: unsupported, finishing\n");
+    return ret;
+  }
+
+  memset(cmd,0,cmdLen);
+  set_SCSI_opcode(cmd, READ_code);
+  set_R_datatype_code(cmd, SR_datatype_pixelsize);
+  set_R_xfer_lid(cmd, 0x02);
+  set_R_xfer_length(cmd, inLen);
+
+  /* May need to retry/block until the scanner is done */
+  for(i=0;i<MAX_TRIES;i++){
+    ret = do_cmd (
+        s, 1, 0,
+        cmd, cmdLen,
+        NULL, 0,
+        in, &inLen
+    );
+
+    if(ret == SANE_STATUS_GOOD &&
+       get_R_PSIZE_width(in) > 0 &&
+       get_R_PSIZE_length(in) > 0){
+
+      DBG (15, "get_pixelsize: w:%d h:%d\n",
+           get_R_PSIZE_width(in) * s->u.dpi_x / 1200,
+           get_R_PSIZE_length(in) * s->u.dpi_y / 1200);
+
+      s->u.br_x = get_R_PSIZE_width(in);
+      s->u.tl_x = 0;
+      s->u.br_y = get_R_PSIZE_length(in);
+      s->u.tl_y = 0;
+
+      update_params(s,0);
+      clean_params(s);
+      break;
+    }
+
+    else{
+      DBG (10, "get_pixelsize: error reading, status = %d w:%d h:%d\n",
+           ret, get_R_PSIZE_width(in), get_R_PSIZE_length(in));
+      ret = SANE_STATUS_INVAL;
+      usleep(1000000);
+    }
+  }
+  DBG (10, "get_pixelsize: finish\n");
+
+  return ret;
 }
 
 /*
@@ -4306,6 +4400,12 @@ sane_start (SANE_Handle handle)
       goto errors;
     }
 
+    ret = get_pixelsize(s);
+    if (ret != SANE_STATUS_GOOD) {
+      DBG (5, "sane_start: ERROR: cannot get pixel size\n");
+      goto errors;
+    }
+
     s->started = 1;
   }
 
@@ -4371,6 +4471,12 @@ sane_start (SANE_Handle handle)
         }
         DBG (5, "sane_start: diff counter (%d/%d)\n",
           s->prev_page,s->panel_counter);
+      }
+
+      ret = get_pixelsize(s);
+      if (ret != SANE_STATUS_GOOD) {
+        DBG (5, "sane_start: ERROR: cannot get pixel size\n");
+        goto errors;
       }
     }
   }

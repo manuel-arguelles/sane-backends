@@ -258,6 +258,11 @@ putnbyte (unsigned char *pnt, unsigned int value, unsigned int nbytes)
 #define R_FINE_uid_blue           0x09
 #define R_FINE_uid_unknown        0x14
 
+/* get pixel size */
+#define R_PSIZE_len               16
+#define get_R_PSIZE_width(in)     getnbyte(in + 0x08, 4)
+#define get_R_PSIZE_length(in)    getnbyte(in + 0x0c, 4)
+
 /* ==================================================================== */
 /* SEND */
 #define SEND_code               0x2a
@@ -461,6 +466,7 @@ putnbyte (unsigned char *pnt, unsigned int value, unsigned int nbytes)
 
 /* for HARDWARE ENHANCEMENT (0x03) */
 #define set_SSM2_roller_deskew(sb, val)      setbitfield(sb+6, 1, 3, val)
+#define set_SSM2_hw_crop(sb, val)            setbitfield(sb+6, 1, 5, val)
 
 /* for DROPOUT (0x06) page */
 #define set_SSM2_DO_do(sb, val)              sb[0x09] = val
